@@ -1,3 +1,5 @@
+Fork of this [library](https://github.com/iain-logan/jwt) based on circe instead of play-json.
+
 # jwt [![Build Status](https://travis-ci.org/iain-logan/jwt.svg?branch=master)](https://travis-ci.org/iain-logan/jwt)
 This library is a Scala implementation of the JSON Web Token (JWT) [specification](http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html).
 
@@ -6,8 +8,6 @@ If you are not familiar with JWTs, then I suggest you check out [this](https://d
 This project aims to abstract away from the raw strings and json often seen in JWT implementations. We instead leverage types for a stricter and more robust implementation.
 # Getting it
 Simply add the following to your build.sbt file:
-
-`libraryDependencies += "io.igl" %% "jwt" % "1.2.2"`
 
 # Usage
 Creating headers and claims 

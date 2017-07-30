@@ -25,7 +25,7 @@ object Iss extends ClaimField {
 }
 
 case class Sub(value: String) extends ClaimValue {
-  override val jsValue = Json.fromString(value)
+  override val jsValue: Json = Json.fromString(value)
   override val field: ClaimField = Sub
 }
 

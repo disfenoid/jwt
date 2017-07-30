@@ -8,7 +8,7 @@ import io.circe.Json
   * 
   */
 case class Scope(value: String) extends ClaimValue {
-  override val jsValue = Json.fromString(value)
+  override val jsValue: Json = Json.fromString(value)
   override val field: ClaimField = Scope
 }
 

@@ -134,10 +134,8 @@ object DecodedJwt {
   }
 
   private def constantTimeIsEqual(as: Array[Byte], bs: Array[Byte]): Boolean = {
-    as.length == bs.length match {
-      case true => (as zip bs).foldLeft(0) { (r, ab) => r + (ab._1 ^ ab._2) } == 0
-      case _ => false
-    }
+    if (as.length == bs.length) (as zip bs).foldLeft(0) { (r, ab) => r + (ab._1 ^ ab._2) } == 0
+    else false
   }
 
   /**
@@ -215,8 +213,9 @@ object DecodedJwt {
 
     // Extract the various parts of a JWT
     val parts: (String, String, String) = jwt.split('.') match {
-      case Array(header, payload, signature) => (header, payload, signature)
-      case Array(header, payload) => (header, payload, "")
+      case Array(headerPart, payloadPart, signaturePart) =>
+        (headerPart, payloadPart, signaturePart)
+      case Array(headerPart, payloadPart) => (headerPart, payloadPart, "")
       case _ => throw new IllegalArgumentException("Jwt could not be split into a header, payload, and signature")
     }
 
