@@ -1,6 +1,6 @@
 package io.igl.jwt
 
-import play.api.libs.json.{JsNumber, JsArray, JsString, JsValue}
+import io.circe.Json
 
 /** Scope claim 
   * 
@@ -8,12 +8,12 @@ import play.api.libs.json.{JsNumber, JsArray, JsString, JsValue}
   * 
   */
 case class Scope(value: String) extends ClaimValue {
-  override val jsValue = JsString(value)
+  override val jsValue = Json.fromString(value)
   override val field: ClaimField = Scope
 }
 
 object Scope extends ClaimField {
-  override def attemptApply(value: JsValue): Option[Scope] =
-    value.asOpt[String].map(apply)
+  override def attemptApply(value: Json): Option[Scope] =
+    value.as[String].toOption.map(apply)
   override val name = "scope"
 }

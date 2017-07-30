@@ -7,16 +7,18 @@ version := "1.2.2"
 scalaVersion := "2.12.1"
 crossScalaVersions := Seq("2.11.7", "2.12.1")
 
+val circeVersion = "0.8.0"
+
 libraryDependencies ++= Seq(
-  playjson(scalaVersion.value),
   "commons-codec" % "commons-codec" % "1.10",
   scalatest(scalaVersion.value)
-)
+) ++ circeDeps(circeVersion)
 
-def playjson(scalaVersion: String) = scalaVersion match {
-  case "2.12.1" => "com.typesafe.play" %% "play-json" % "2.6.0-M6"
-  case "2.11.7" => "com.typesafe.play" %% "play-json" % "2.4.0"
-}
+def circeDeps(circeVersion: String) = Seq(
+  "io.circe" %% "circe-core",
+  "io.circe" %% "circe-generic",
+  "io.circe" %% "circe-parser"
+) map (_ % circeVersion)
 
 def scalatest(scalaVersion: String) = scalaVersion match {
   case "2.12.1" => "org.scalatest" % "scalatest_2.12" % "3.0.1" % "test"
@@ -35,7 +37,7 @@ publishTo := {
     Some("releases"  at nexus + "service/local/staging/deploy/maven2")
 }
 
-pomExtra := (
+pomExtra :=
   <url>github.com/iain-logan/jwt</url>
   <licenses>
     <license>
@@ -54,4 +56,4 @@ pomExtra := (
       <name>Iain Logan</name>
       <url>igl.io</url>
     </developer>
-  </developers>)
+  </developers>

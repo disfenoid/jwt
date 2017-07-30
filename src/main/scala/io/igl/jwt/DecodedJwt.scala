@@ -1,26 +1,27 @@
 package io.igl.jwt
 
-import java.security.{Signature, KeyFactory}
-import java.security.spec.PKCS8EncodedKeySpec
-
 import java.nio.charset.StandardCharsets.UTF_8
+import java.security.spec.PKCS8EncodedKeySpec
+import java.security.{KeyFactory, Signature}
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
+
+import io.circe._
+import io.circe.parser._
 import org.apache.commons.codec.binary.Base64
-import play.api.libs.json.JsObject
-import play.api.libs.json.Json
+
 import scala.reflect.ClassTag
 import scala.util.Try
 
 /**
- * A class representing a decoded jwt.
- *
- * When an [[Alg]] value is omitted it defaults to none. Where multiple headers or claims with the same field name are
- * provided, the last occurrence is used.
- *
- * @param headers_ the values of the headers to be set
- * @param claims_ the values of the claims to be set
- */
+  * A class representing a decoded jwt.
+  *
+  * When an [[Alg]] value is omitted it defaults to none. Where multiple headers or claims with the same field name are
+  * provided, the last occurrence is used.
+  *
+  * @param headers_ the values of the headers to be set
+  * @param claims_  the values of the claims to be set
+  */
 class DecodedJwt(headers_ : Seq[HeaderValue], claims_ : Seq[ClaimValue]) extends Jwt {
 
   // Sort headers and claims so that if multiple duplicate types are provided, the last header/claim of said type is selected
@@ -41,13 +42,13 @@ class DecodedJwt(headers_ : Seq[HeaderValue], claims_ : Seq[ClaimValue]) extends
     }
   }
 
-  override def getHeader[T <: HeaderValue: ClassTag]: Option[T] = headers.collectFirst {
-      case header: T => header.asInstanceOf[T]
-    }
+  override def getHeader[T <: HeaderValue : ClassTag]: Option[T] = headers.collectFirst {
+    case header: T => header.asInstanceOf[T]
+  }
 
-  override def getClaim[T <: ClaimValue: ClassTag]: Option[T] = claims.collectFirst {
-      case claim: T => claim.asInstanceOf[T]
-    }
+  override def getClaim[T <: ClaimValue : ClassTag]: Option[T] = claims.collectFirst {
+    case claim: T => claim.asInstanceOf[T]
+  }
 
   private val algorithm = getHeader[Alg].map(_.value).get
 
@@ -56,10 +57,14 @@ class DecodedJwt(headers_ : Seq[HeaderValue], claims_ : Seq[ClaimValue]) extends
   }
 
   def encodedAndSigned(secret: Array[Byte]): String = {
-    def jsAssign(value: JwtValue) = value.field.name -> value.jsValue
+    def jsAssign(value: JwtValue) = {
+      value.field.name -> value.jsValue
+    }
 
-    val encodedHeader: String = DecodedJwt.encodeBase64Url(JsObject(headers.map(jsAssign)).toString())
-    val encodedPayload: String = DecodedJwt.encodeBase64Url(JsObject(claims.map(jsAssign)).toString())
+    val encodedHeader: String = DecodedJwt.encodeBase64Url(Json.fromFields(headers.map(jsAssign)).noSpaces)
+    //val encodedHeader: String = DecodedJwt.encodeBase64Url(JsObject(headers.map(jsAssign)).toString())
+    val encodedPayload: String = DecodedJwt.encodeBase64Url(Json.fromFields(claims.map(jsAssign)).noSpaces)
+    //val encodedPayload: String = DecodedJwt.encodeBase64Url(JsObject(claims.map(jsAssign)).toString())
     val encodedHeaderAndPayload: String = encodedHeader ++ ('.' +: encodedPayload)
 
     encodedHeaderAndPayload ++ ('.' +: DecodedJwt.encodedSignature(encodedHeaderAndPayload, algorithm, secret))
@@ -70,8 +75,8 @@ class DecodedJwt(headers_ : Seq[HeaderValue], claims_ : Seq[ClaimValue]) extends
   override def equals(other: Any): Boolean = other match {
     case that: DecodedJwt =>
       (that canEqual this) &&
-      (headers == that.headers) &&
-      (claims == that.claims)
+        (headers == that.headers) &&
+        (claims == that.claims)
     case _ => false
   }
 
@@ -108,10 +113,11 @@ object DecodedJwt {
       mac.init(new SecretKeySpec(secret, alg.toString))
       encodeBase64Url(mac.doFinal(encodedHeaderAndPayload.getBytes("utf-8")))
     }
+
     def rsa(alg: Algorithm) = {
       val sign = Signature.getInstance(alg.toString)
-      val keySpecPv = new PKCS8EncodedKeySpec(secret);
-      val kf = KeyFactory.getInstance("RSA");
+      val keySpecPv = new PKCS8EncodedKeySpec(secret)
+      val kf = KeyFactory.getInstance("RSA")
       val privateKey = kf.generatePrivate(keySpecPv)
       sign.initSign(privateKey)
       sign.update(encodedHeaderAndPayload.getBytes("utf-8"))
@@ -129,7 +135,7 @@ object DecodedJwt {
 
   private def constantTimeIsEqual(as: Array[Byte], bs: Array[Byte]): Boolean = {
     as.length == bs.length match {
-      case true => (as zip bs).foldLeft (0) {(r, ab) => r + (ab._1 ^ ab._2)} == 0
+      case true => (as zip bs).foldLeft(0) { (r, ab) => r + (ab._1 ^ ab._2) } == 0
       case _ => false
     }
   }
@@ -153,19 +159,19 @@ object DecodedJwt {
                           jti: Option[Jti] = None,
                           charset: String = "UTF-8"): Try[Jwt] = {
     validateEncodedJwtWithEncodedSecret(
-                                        jwt,
-                                        key.getBytes(UTF_8),
-                                        requiredAlg,
-                                        requiredHeaders,
-                                        requiredClaims,
-                                        ignoredHeaders,
-                                        ignoredClaims,
-                                        iss,
-                                        aud,
-                                        iat,
-                                        sub,
-                                        jti,
-                                        charset)
+      jwt,
+      key.getBytes(UTF_8),
+      requiredAlg,
+      requiredHeaders,
+      requiredClaims,
+      ignoredHeaders,
+      ignoredClaims,
+      iss,
+      aud,
+      iat,
+      sub,
+      jti,
+      charset)
   }
 
   /**
@@ -189,19 +195,19 @@ object DecodedJwt {
     * @return returns a [[DecodedJwt]] wrapped in Success when successful, otherwise Failure
     */
   def validateEncodedJwtWithEncodedSecret(
-                          jwt: String,
-                          key: Array[Byte],
-                          requiredAlg: Algorithm,
-                          requiredHeaders: Set[HeaderField],
-                          requiredClaims: Set[ClaimField],
-                          ignoredHeaders: Set[String] = Set(),
-                          ignoredClaims: Set[String] = Set(),
-                          iss: Option[Iss] = None,
-                          aud: Option[Aud] = None,
-                          iat: Option[Iat] = None,
-                          sub: Option[Sub] = None,
-                          jti: Option[Jti] = None,
-                          charset: String = "UTF-8"): Try[Jwt] = Try {
+                                           jwt: String,
+                                           key: Array[Byte],
+                                           requiredAlg: Algorithm,
+                                           requiredHeaders: Set[HeaderField],
+                                           requiredClaims: Set[ClaimField],
+                                           ignoredHeaders: Set[String] = Set(),
+                                           ignoredClaims: Set[String] = Set(),
+                                           iss: Option[Iss] = None,
+                                           aud: Option[Aud] = None,
+                                           iat: Option[Iat] = None,
+                                           sub: Option[Sub] = None,
+                                           jti: Option[Jti] = None,
+                                           charset: String = "UTF-8"): Try[Jwt] = Try {
 
     require(requiredHeaders.map(_.name).size == requiredHeaders.size, "Required headers contains field name collisions")
     require(requiredClaims.map(_.name).size == requiredClaims.size, "Required claims contains field name collisions")
@@ -214,40 +220,48 @@ object DecodedJwt {
       case _ => throw new IllegalArgumentException("Jwt could not be split into a header, payload, and signature")
     }
 
-    val header    = parts._1
-    val payload   = parts._2
+    val header = parts._1
+    val payload = parts._2
     val signature = parts._3
 
     // Validate headers
     val headerJson = Try {
-      Json.parse(decodeBase64(header, charset)) match {
-        case header: JsObject => header
+      parse(decodeBase64(header, charset)) match {
+        case Right(h) => h
         case _ => throw new IllegalArgumentException()
       }
     }.getOrElse(throw new IllegalArgumentException("Decoded header could not be parsed to a JSON object"))
 
-    val headers = headerJson.fields.flatMap {
-      case (Alg.name, value) => Alg.attemptApply(value).map {
-        case alg if alg.value == requiredAlg => alg
-        case _ => throw new IllegalArgumentException("Given jwt uses a different algorithm ")
-      }.orElse(throw new IllegalArgumentException("Algorithm values did not match"))
-      case (field, value) =>
-        requiredHeaders.find(x => x.name == field) match {
-          case Some(requiredHeader) => requiredHeader.attemptApply(value)
-          case None =>
-            ignoredHeaders.find(_ == field).
-              getOrElse(throw new IllegalArgumentException("Found header that is in neither the required or ignored sets"))
-            None
-        }
-    }
+    val headers = headerJson.hcursor.fields.map { v =>
+      v.flatMap {
+        case field@Alg.name =>
+          val value = (headerJson \\ field).head
+          println(s"Field: $field, Value: $value")
+          Alg.attemptApply(value).map {
+            case alg if alg.value == requiredAlg => alg
+            case _ => throw new IllegalArgumentException("Given jwt uses a different algorithm ")
+          }.orElse(throw new IllegalArgumentException("Algorithm values did not match"))
+
+        case field =>
+          val value = (headerJson \\ field).head
+          println(s"Field: $field, Value: $value")
+          requiredHeaders.find(x => x.name == field) match {
+            case Some(requiredHeader) => requiredHeader.attemptApply(value)
+            case None =>
+              ignoredHeaders.find(_ == field).
+                getOrElse(throw new IllegalArgumentException("Found header that is in neither the required or ignored sets"))
+              None
+          }
+      }
+    } getOrElse (throw new IllegalArgumentException("You need to pass a proper JSON object"))
 
     if (headers.size != requiredHeaders.size + 1)
       throw new IllegalArgumentException("Provided jwt did not contain all required headers")
 
     // Validate payload
     val payloadJson = Try {
-      Json.parse(decodeBase64(payload, charset)) match {
-        case payload: JsObject => payload
+      parse(decodeBase64(payload, charset)) match {
+        case Right(p) => p
         case _ => throw new IllegalArgumentException()
       }
     }.getOrElse(throw new IllegalArgumentException("Decoded payload could not be parsed to a JSON object"))
@@ -255,53 +269,60 @@ object DecodedJwt {
     /** Time in seconds since 1970-01-01T00:00:00Z UTC **/
     def now: Long = System.currentTimeMillis / 1000
 
-    val claims = payloadJson.fields.flatMap {
-      case (field, value) =>
-        requiredClaims.find(x => x.name == field) match {
-          case Some(requiredClaim) => requiredClaim.attemptApply(value).map {
+    val claims: Seq[ClaimValue] = payloadJson.hcursor.fields.map { v =>
+      v.flatMap { field =>
+        val value = (payloadJson \\ field).head
+        requiredClaims.find(_.name == field) match {
+          case Some(requiredClaim) => requiredClaim.attemptApply(value) map {
             case exp: Exp =>
-              now < exp.value match {
-                case true  => exp
-                case false => throw new IllegalArgumentException("Jwt has expired")
-              }
+              if (now < exp.value) exp
+              else throw new IllegalArgumentException("Jwt has expired")
+
             case nbf: Nbf =>
-              now > nbf.value match {
-                case true  => nbf
-                case false => throw new IllegalArgumentException("Jwt is not yet valid")
-              }
+              if (now > nbf.value) nbf
+              else throw new IllegalArgumentException("Jwt is not yet valid")
+
             case fIss: Iss =>
-              iss.map(_.equals(fIss) match {
-                case true => fIss
-                case false => throw new IllegalArgumentException("Iss didn't match required iss")
-              }).getOrElse(fIss)
+              iss.map(i =>
+                if (i.equals(fIss)) fIss
+                else throw new IllegalArgumentException("Iss didn't match required iss")
+              ).getOrElse(fIss)
+
             case fAud: Aud =>
-              aud.map(_.equals(fAud) match {
-                case true => fAud
-                case false => throw new IllegalArgumentException("Aud didn't match required aud")
-              }).getOrElse(fAud)
+              aud.map(a =>
+                if (a.equals(fAud)) fAud
+                else throw new IllegalArgumentException("Aud didn't match required aud")
+              ).getOrElse(fAud)
+
             case fIat: Iat =>
-              iat.map(_.equals(fIat) match {
-                case true => fIat
-                case false => throw new IllegalArgumentException("Iat didn't match required iat")
-              }).getOrElse(fIat)
+              iat.map(i =>
+                if (i.equals(fIat)) fIat
+                else throw new IllegalArgumentException("Iat didn't match required iat")
+              ).getOrElse(fIat)
+
             case fSub: Sub =>
-              sub.map(_.equals(fSub) match {
-                case true => fSub
-                case false => throw new IllegalArgumentException("Sub didn't match required sub")
-              }).getOrElse(fSub)
+              sub.map(s =>
+                if (s.equals(fSub)) fSub
+                else throw new IllegalArgumentException("Sub didn't match required sub")
+              ).getOrElse(fSub)
+
             case fJti: Jti =>
-              jti.map(_.equals(fJti) match {
-                case true => fJti
-                case false => throw new IllegalArgumentException("Jti didn't match required jti")
-              }).getOrElse(fJti)
+              jti.map(j =>
+                if (j.equals(fJti)) fJti
+                else throw new IllegalArgumentException("Jti didn't match required jti")
+              ).getOrElse(fJti)
+
             case claim => claim
           }
+
+
           case None =>
             ignoredClaims.find(_ == field).
               getOrElse(throw new IllegalArgumentException("Found claim that is in neither the required or ignored sets"))
             None
         }
-    }
+      }
+    } getOrElse (throw new Exception("OOOOOOOOOOOOOOPS #2"))
 
     if (claims.size != requiredClaims.size)
       throw new IllegalArgumentException("Provided jwt did not contain all required claims")

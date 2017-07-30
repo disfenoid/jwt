@@ -1,6 +1,7 @@
 package io.igl.jwt
 
-import play.api.libs.json._
+import io.circe.Json
+
 
 /**
  * A representation of a jwt field value.
@@ -14,6 +15,6 @@ trait JwtValue {
   val value: Any
 
   /** The value of a field represented as json **/
-  val jsValue: JsValue
+  val jsValue: Json
 
 }
