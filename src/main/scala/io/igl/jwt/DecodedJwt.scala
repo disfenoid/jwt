@@ -252,7 +252,7 @@ object DecodedJwt {
               None
           }
       }
-    } getOrElse (throw new IllegalArgumentException("You need to pass a proper JSON object"))
+    } getOrElse (throw new IllegalArgumentException("You need to pass a proper JSON object")) toSeq
 
     if (headers.size != requiredHeaders.size + 1)
       throw new IllegalArgumentException("Provided jwt did not contain all required headers")
@@ -321,7 +321,7 @@ object DecodedJwt {
             None
         }
       }
-    } getOrElse (throw new Exception("OOOOOOOOOOOOOOPS #2"))
+    } getOrElse (throw new Exception("You need to pass a proper json object")) toSeq
 
     if (claims.size != requiredClaims.size)
       throw new IllegalArgumentException("Provided jwt did not contain all required claims")
