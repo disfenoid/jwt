@@ -38,7 +38,7 @@ publishTo := {
 }
 
 pomExtra :=
-  <url>github.com/iain-logan/jwt</url>
+  <url>github.com/disfenoid/jwt</url>
   <licenses>
     <license>
       <name>MIT License</name>
@@ -47,13 +47,17 @@ pomExtra :=
     </license>
   </licenses>
   <scm>
-    <url>git@github.com:iain-logan/jwt.git</url>
-    <connection>scm:git:git@github.com:iain-logan/jwt.git</connection>
+    <url>git@github.com:disfenoid/jwt.git</url>
+    <connection>scm:git:git@github.com:disfenoid/jwt.git</connection>
   </scm>
   <developers>
     <developer>
       <id>iain-logan</id>
       <name>Iain Logan</name>
       <url>igl.io</url>
+    </developer>
+    <developer>
+      <id>disfenoid</id>
+      <name>Alexandr</name>
     </developer>
   </developers>
